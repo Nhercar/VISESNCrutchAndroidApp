@@ -150,6 +150,16 @@ class BleOperationsActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
+        // Filter the characteristics to only include those that are notifiable or indicatable
+        val subscribableCharacteristics = characteristics.filter { characteristic ->
+            characteristic.isNotifiable()
+        }
+
+        // Update the adapter with the filtered list
+        val characteristicAdapter = CharacteristicAdapter(subscribableCharacteristics) { characteristic ->
+            showCharacteristicOptions(characteristic)
+        }
+
         binding.characteristicsRecyclerView.apply {
             adapter = characteristicAdapter
             layoutManager = LinearLayoutManager(
@@ -167,7 +177,8 @@ class BleOperationsActivity : AppCompatActivity() {
         }
     }
 
-        // Preexisting
+
+    // Preexisting
     @SuppressLint("SetTextI18n")
     private fun log(message: String) {
 

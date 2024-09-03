@@ -52,7 +52,7 @@ class CharacteristicAdapter(
 
         fun bind(characteristic: BluetoothGattCharacteristic) {
             view.findViewById<TextView>(R.id.characteristic_uuid).text =
-                characteristic.uuid.toString()
+                characteristic.uuid.toString().substring(4, 8)
             view.findViewById<TextView>(R.id.characteristic_properties).text =
                 characteristic.printProperties()
             view.setOnClickListener { onClickListener.invoke(characteristic) }
