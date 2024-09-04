@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.util.Log
+import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 
@@ -54,5 +55,20 @@ class FileManager(private val context: Context) {
     // Method to check if external storage is writable (for Android 10 and below)
     private fun isExternalStorageWritable(): Boolean {
         return Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
+    }
+
+    fun writeToCSVFile(fileName: String, data: List<String>) {
+        val file = File(context.getExternalFilesDir(null), fileName)
+        try {
+            FileOutputStream(file, true).use { output ->
+                // Join the list of data with commas and add a newline at the end
+                val csvLine = data.joinToString(separator = ",") + "\n"
+                output.write(csvLine.toByteArray())
+            }
+            Timber.d("Data written to CSV file: $fileName")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Timber.e("Error writing to file: ${e.localizedMessage}")
+        }
     }
 }

@@ -275,6 +275,18 @@ class BleOperationsActivity : AppCompatActivity() {
         }
 
         fileManager.writeToExternalFile("log_data.txt", logMessage)
+
+        // Write the same data to a CSV file
+        val csvData = listOf(
+            uuidShort,                    // UUID (first 8 characters)
+            currentTime,                  // Timestamp
+            floatValues[0].toString(),    // Value 1
+            floatValues[1].toString(),    // Value 2
+            floatValues[2].toString()     // Value 3
+        )
+
+        // Call the CSV writer to log the data
+        fileManager.writeToCSVFile("log_data.csv", csvData)
     }
 
 
