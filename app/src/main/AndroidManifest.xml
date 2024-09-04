@@ -56,12 +56,14 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
         <activity android:name=".BleOperationsActivity"
-            android:screenOrientation="portrait"
+            android:screenOrientation="fullSensor"
             android:exported="false"
+            tools:ignore="DiscouragedApi"
             />
         <activity android:name=".MainActivity"
-            android:screenOrientation="portrait"
+            android:screenOrientation="fullSensor"
             android:exported="true"
+            tools:ignore="DiscouragedApi"
             >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

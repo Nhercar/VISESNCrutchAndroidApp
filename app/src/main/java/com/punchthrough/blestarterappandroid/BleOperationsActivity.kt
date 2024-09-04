@@ -378,6 +378,7 @@ class BleOperationsActivity : AppCompatActivity() {
             }
 
             onMtuChanged = { _, mtu ->
+                fileManager.writeToCSVFile("log_data.csv", listOf("New set of data"))
                 log("MTU updated to $mtu")
             }
 
