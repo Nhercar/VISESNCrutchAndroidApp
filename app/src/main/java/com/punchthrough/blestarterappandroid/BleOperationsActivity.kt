@@ -22,6 +22,8 @@ import android.app.AlertDialog
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGattCharacteristic
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
@@ -29,6 +31,7 @@ import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
@@ -52,11 +55,19 @@ import java.util.UUID
 
 class BleOperationsActivity : AppCompatActivity() {
 
+    private lateinit var fileManager: FileManager
+
     private lateinit var binding: ActivityBleOperationsBinding
     private val device: BluetoothDevice by lazy {
         intent.parcelableExtraCompat(BluetoothDevice.EXTRA_DEVICE)
             ?: error("Missing BluetoothDevice from MainActivity!")
     }
+
+    // Define a request code constant for permission requests
+    companion object {
+        private const val REQUEST_CODE_WRITE_EXTERNAL_STORAGE = 1001
+    }
+
     private val dateFormatter = SimpleDateFormat("MMM d, HH:mm:ss", Locale.US)
     private val characteristics by lazy {
         ConnectionManager.servicesOnDevice(device)?.flatMap { service ->
@@ -76,11 +87,13 @@ class BleOperationsActivity : AppCompatActivity() {
             }.toList()
         }
     }
-    private val characteristicAdapter: CharacteristicAdapter by lazy {
-        CharacteristicAdapter(characteristics) { characteristic ->
-            showCharacteristicOptions(characteristic)
-        }
-    }
+   // private val characteristicAdapter: CharacteristicAdapter by lazy {
+   //     CharacteristicAdapter(characteristics) { characteristic ->
+   //         showCharacteristicOptions(characteristic)
+   //     }
+   // }
+
+
     private val notifyingCharacteristics = mutableListOf<UUID>()
 
     @SuppressLint("MissingPermission", "SetTextI18n")
@@ -91,30 +104,67 @@ class BleOperationsActivity : AppCompatActivity() {
         binding = ActivityBleOperationsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        fileManager = FileManager(this)
+
         supportActionBar?.apply {
             setDisplayHomeAsUpEnabled(true)
             setDisplayShowTitleEnabled(true)
             title = getString(R.string.ble_playground)
         }
+
         // Retrieve the BluetoothDevice from the intent
         @Suppress("DEPRECATION")
         val device: BluetoothDevice? = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
 
-        // Set the device name in the TextView
+        // Check Bluetooth permissions
         if (this.hasRequiredBluetoothPermissions()) {
             // Permission granted, access the device name
             binding.deviceName.text = device?.name ?: "Unknown Device"
         } else {
             error("Missing required Bluetooth permissions")
-
         }
 
+        // Check and request storage permissions before subscribing or saving to external storage
+        checkStoragePermission()
 
         setupRecyclerView()
 
         // Automatically subscribe to characteristics
         subscribeToCharacteristics()
     }
+
+    // Function to check for storage permission
+    private fun checkStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11 (API 30) and above: No need for WRITE_EXTERNAL_STORAGE permission for app-specific directories
+            log("No need for WRITE_EXTERNAL_STORAGE permission on Android 11+.")
+        } else {
+            // For Android 10 and below, request the WRITE_EXTERNAL_STORAGE permission
+            if (!hasPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE), REQUEST_CODE_WRITE_EXTERNAL_STORAGE)
+            } else {
+                log("Storage permission already granted.")
+            }
+        }
+    }
+
+
+    // Handle the result of permission requests
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE_WRITE_EXTERNAL_STORAGE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted, log the success
+                log("Storage permission granted.")
+            } else {
+                // Permission denied, handle accordingly
+                log("Storage permission denied.")
+            }
+        }
+    }
+
+
+
 
     // Method to subscribe to characteristics automatically
     private fun subscribeToCharacteristics() {
@@ -191,6 +241,7 @@ class BleOperationsActivity : AppCompatActivity() {
         }
     }
 
+    // Custom function to write in the log and eventually in the external storage
     @SuppressLint("SetTextI18n")
     private fun logCustomFormat(characteristic: BluetoothGattCharacteristic, value: ByteArray) {
         // Limit the UUID to the first 8 digits
@@ -222,6 +273,8 @@ class BleOperationsActivity : AppCompatActivity() {
             binding.logTextView.text = "$currentLogText\n$logMessage"
             binding.logScrollView.post { binding.logScrollView.fullScroll(View.FOCUS_DOWN) }
         }
+
+        fileManager.writeToExternalFile("log_data.txt", logMessage)
     }
 
 

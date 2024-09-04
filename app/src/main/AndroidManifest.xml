@@ -34,6 +34,16 @@
         tools:targetApi="s" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
+
+    <!-- Permissions requested to store in external storage -->
+  <!--  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"
+        tools:ignore="ScopedStorage"
+        /> -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
+
+
+
     <uses-feature
         android:name="android.hardware.bluetooth_le"
         android:required="true" />
