@@ -68,6 +68,7 @@ class BleOperationsActivity : AppCompatActivity() {
         private const val REQUEST_CODE_WRITE_EXTERNAL_STORAGE = 1001
     }
 
+
     private val dateFormatter = SimpleDateFormat("MMM d, HH:mm:ss", Locale.US)
     private val characteristics by lazy {
         ConnectionManager.servicesOnDevice(device)?.flatMap { service ->
@@ -115,6 +116,7 @@ class BleOperationsActivity : AppCompatActivity() {
         // Retrieve the BluetoothDevice from the intent
         @Suppress("DEPRECATION")
         val device: BluetoothDevice? = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+        fileManager.writeToCSVFile("log_data.csv", listOf("New set of data"))
 
         // Check Bluetooth permissions
         if (this.hasRequiredBluetoothPermissions()) {
@@ -126,6 +128,7 @@ class BleOperationsActivity : AppCompatActivity() {
 
         // Check and request storage permissions before subscribing or saving to external storage
         checkStoragePermission()
+
 
         setupRecyclerView()
 
@@ -231,7 +234,6 @@ class BleOperationsActivity : AppCompatActivity() {
     // Preexisting
     @SuppressLint("SetTextI18n")
     private fun log(message: String) {
-
         val formattedMessage = "${dateFormatter.format(Date())}: $message"
         runOnUiThread {
             val uiText = binding.logTextView.text
@@ -263,18 +265,6 @@ class BleOperationsActivity : AppCompatActivity() {
                 )
             }
 
-        // Format the log message
-        val logMessage = "$uuidShort [$currentTime]: ${floatValues[0]}, ${floatValues[1]}, ${floatValues[2]}"
-
-        // Append the log message to the log view
-        runOnUiThread {
-            val uiText = binding.logTextView.text
-            val currentLogText = uiText.ifEmpty { "Beginning of log." }
-            binding.logTextView.text = "$currentLogText\n$logMessage"
-            binding.logScrollView.post { binding.logScrollView.fullScroll(View.FOCUS_DOWN) }
-        }
-
-        fileManager.writeToExternalFile("log_data.txt", logMessage)
 
         // Write the same data to a CSV file
         val csvData = listOf(
@@ -378,7 +368,7 @@ class BleOperationsActivity : AppCompatActivity() {
             }
 
             onMtuChanged = { _, mtu ->
-                fileManager.writeToCSVFile("log_data.csv", listOf("New set of data"))
+
                 log("MTU updated to $mtu")
             }
 

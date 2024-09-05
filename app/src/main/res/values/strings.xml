@@ -28,5 +28,9 @@
     <string name="quit">Quit</string>
     <string name="disconnected">Disconnected</string>
     <string name="disconnected_or_unable_to_connect_to_device">Disconnected or unable to connect to %1$s.</string>
+    <string name="Location_needed">Location warning</string>
+    <string name="Location_services_are_required_to_run_the_app">Location services are required to run the app.</string>
     <string name="ok">OK</string>
+    <string name="enable_location" />
+    <string name="location_services_rationale" />
 </resources>

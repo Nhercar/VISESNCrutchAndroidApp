@@ -20,8 +20,11 @@ import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.os.Build
+import android.provider.Settings
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -47,6 +50,7 @@ fun Context.hasRequiredBluetoothPermissions(): Boolean {
         hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     }
 }
+
 
 /**
  * Request for the necessary permissions for Bluetooth operations to work.
@@ -74,6 +78,7 @@ fun Activity.requestRelevantBluetoothPermissions(requestCode: Int) {
     }
 }
 
+
 //region Location permission
 private fun Activity.locationPermissionRationaleRequired(): Boolean {
     return ActivityCompat.shouldShowRequestPermissionRationale(
@@ -81,6 +86,14 @@ private fun Activity.locationPermissionRationaleRequired(): Boolean {
         Manifest.permission.ACCESS_FINE_LOCATION
     )
 }
+
+// Created this functions to enable location in order to search and connect to BLE devices
+fun Context.isLocationServicesEnabled(): Boolean {
+    val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+        locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+}
+
 
 private fun Activity.displayLocationPermissionRationale(requestCode: Int) {
     runOnUiThread {

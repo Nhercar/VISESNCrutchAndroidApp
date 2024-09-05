@@ -105,13 +105,22 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
             Timber.plant(Timber.DebugTree())
         }
+
         binding.scanButton.setOnClickListener { if (isScanning) stopBleScan() else startBleScan() }
+
+        // Ensure location services are enabled
+            if (!isLocationServicesEnabled()) {
+             promptEnableLocationServices()
+         }
+
         setupRecyclerView()
     }
 
@@ -121,6 +130,10 @@ class MainActivity : AppCompatActivity() {
         if (!bluetoothAdapter.isEnabled) {
             promptEnableBluetooth()
         }
+        // Ensure location services are enabled
+       /* if (!isLocationServicesEnabled()) {
+            promptEnableLocationServices()
+        }*/
     }
 
     override fun onPause() {
@@ -163,6 +176,7 @@ class MainActivity : AppCompatActivity() {
         }
         val containsDenial = grantResults.any { it == PackageManager.PERMISSION_DENIED }
         val allGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+
         when {
             containsPermanentDenial -> {
                 Timber.e("User permanently denied granting of permissions")
@@ -174,7 +188,13 @@ class MainActivity : AppCompatActivity() {
                 requestRelevantBluetoothPermissions(PERMISSION_REQUEST_CODE)
             }
             allGranted && hasRequiredBluetoothPermissions() -> {
-                startBleScan()
+                // If permissions are granted, check if location services are enabled
+                if (!isLocationServicesEnabled()) {
+                    promptEnableLocationServices() // Prompt user to enable location services
+                } else {
+                    // If both permissions and location services are enabled, start BLE scan
+                    startBleScan()
+                }
             }
             else -> {
                 Timber.e("Unexpected scenario encountered when handling permissions")
@@ -201,10 +221,29 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
+    private fun Activity.promptEnableLocationServices() {
+        if (!isLocationServicesEnabled()) {
+            AlertDialog.Builder(this@MainActivity)
+                .setTitle("Location Services")
+                .setMessage("Location services needed to run the app")
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    // Send the user to the location settings
+                    val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                    startActivity(intent)
+                }
+                .setNegativeButton(R.string.quit) { _, _ -> finishAndRemoveTask() }
+                .setCancelable(false)
+                .show()
+        }
+    }
+
     @SuppressLint("MissingPermission, NotifyDataSetChanged") // Check performed inside extension fun
     private fun startBleScan() {
         if (!hasRequiredBluetoothPermissions()) {
             requestRelevantBluetoothPermissions(PERMISSION_REQUEST_CODE)
+        } else if (!isLocationServicesEnabled()) {
+            promptEnableLocationServices()
         } else {
             scanResults.clear()
             scanResultAdapter.notifyDataSetChanged()
