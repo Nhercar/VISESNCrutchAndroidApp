@@ -110,7 +110,7 @@ class BleOperationsActivity : AppCompatActivity() {
         supportActionBar?.apply {
             setDisplayHomeAsUpEnabled(true)
             setDisplayShowTitleEnabled(true)
-            title = getString(R.string.ble_playground)
+            title = getString(R.string.Crutch_characteristics)
         }
 
         // Retrieve the BluetoothDevice from the intent
