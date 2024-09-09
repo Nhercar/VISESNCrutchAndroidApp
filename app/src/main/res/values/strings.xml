@@ -35,4 +35,5 @@
     <string name="enable_location" />
     <string name="location_services_rationale" />
     <string name="log">Log</string>
+    <string name="share_csv_file">Share CSV file</string>
 </resources>

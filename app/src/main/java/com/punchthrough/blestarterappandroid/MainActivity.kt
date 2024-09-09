@@ -315,6 +315,15 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission")
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
+
+            // Filter out devices that are unnamed (i.e., device.name is null or empty)
+            val deviceName = result.device.name
+            if (deviceName.isNullOrEmpty()) {
+                // Skip unnamed devices
+                return
+            }
+
+
             val indexQuery = scanResults.indexOfFirst { it.device.address == result.device.address }
             if (indexQuery != -1) { // A scan result already exists with the same address
                 scanResults[indexQuery] = result

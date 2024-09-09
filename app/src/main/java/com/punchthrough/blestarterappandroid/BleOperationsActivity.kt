@@ -52,12 +52,18 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import android.content.Intent
+import android.net.Uri
+import android.widget.Button
+import androidx.core.content.FileProvider
+import java.io.File
+
 
 class BleOperationsActivity : AppCompatActivity() {
 
     private lateinit var fileManager: FileManager
-
     private lateinit var binding: ActivityBleOperationsBinding
+
     private val device: BluetoothDevice by lazy {
         intent.parcelableExtraCompat(BluetoothDevice.EXTRA_DEVICE)
             ?: error("Missing BluetoothDevice from MainActivity!")
@@ -70,11 +76,13 @@ class BleOperationsActivity : AppCompatActivity() {
 
 
     private val dateFormatter = SimpleDateFormat("MMM d, HH:mm:ss", Locale.US)
+
     private val characteristics by lazy {
         ConnectionManager.servicesOnDevice(device)?.flatMap { service ->
             service.characteristics ?: listOf()
         } ?: listOf()
     }
+
     private val characteristicProperties by lazy {
         characteristics.associateWith { characteristic ->
             mutableListOf<CharacteristicProperty>().apply {
@@ -105,6 +113,7 @@ class BleOperationsActivity : AppCompatActivity() {
         binding = ActivityBleOperationsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Initialize FileManager for handling CSV file writing
         fileManager = FileManager(this)
 
         supportActionBar?.apply {
@@ -129,6 +138,10 @@ class BleOperationsActivity : AppCompatActivity() {
         // Check and request storage permissions before subscribing or saving to external storage
         checkStoragePermission()
 
+        // Set up Share CSV button click handler
+        binding.shareCsvButton.setOnClickListener {
+            shareCsvFile()
+        }
 
         setupRecyclerView()
 
@@ -184,6 +197,37 @@ class BleOperationsActivity : AppCompatActivity() {
             }
         }
     }
+
+
+    private fun shareCsvFile() {
+        // File name for the CSV
+        val csvFile = File(getExternalFilesDir(null), "log_data.csv")
+
+        // Check if the file exists before sharing
+        if (csvFile.exists()) {
+            // Use FileProvider to get a content URI for the file
+            val fileUri: Uri = FileProvider.getUriForFile(
+                this,
+                "${packageName}.provider", // Authority as defined in Manifest
+                csvFile
+            )
+
+            // Create an intent to share the CSV file
+            val shareIntent: Intent = Intent().apply {
+                action = Intent.ACTION_SEND
+                type = "text/csv"
+                putExtra(Intent.EXTRA_STREAM, fileUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // Allow access to the file
+            }
+
+            // Start the share intent, prompting the user to select an app to share with
+            startActivity(Intent.createChooser(shareIntent, "Share CSV file"))
+        } else {
+            // Log or display an error if the file doesn't exist
+            log("CSV file not found")
+        }
+    }
+
 
 
     override fun onDestroy() {
