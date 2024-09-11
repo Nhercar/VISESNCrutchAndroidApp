@@ -31,7 +31,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -55,6 +57,8 @@ class MainActivity : AppCompatActivity() {
      *******************************************/
 
     private lateinit var binding: ActivityMainBinding
+
+    private val fileManager = FileManager(this)
 
     private val bluetoothAdapter: BluetoothAdapter by lazy {
         val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -114,12 +118,25 @@ class MainActivity : AppCompatActivity() {
             Timber.plant(Timber.DebugTree())
         }
 
+
         binding.scanButton.setOnClickListener { if (isScanning) stopBleScan() else startBleScan() }
 
         // Ensure location services are enabled
             if (!isLocationServicesEnabled()) {
              promptEnableLocationServices()
          }
+
+        requestBackgroundExecutionPermission()
+        requestIgnoreBatteryOptimization()
+
+        // Set listeners for the share and delete buttons
+        binding.shareCsvButton.setOnClickListener {
+            fileManager.shareCsvFile()
+        }
+
+        binding.deleteCsvButton.setOnClickListener {
+            fileManager.deleteCsvFile()
+        }
 
         setupRecyclerView()
     }
@@ -206,6 +223,17 @@ class MainActivity : AppCompatActivity() {
     /*******************************************
      * Private functions
      *******************************************/
+    private fun requestIgnoreBatteryOptimization() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+                val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                startActivity(intent)
+            } else {
+                Timber.i("Battery optimization is already disabled for this app.")
+            }
+        }
+    }
 
     /**
      * Prompts the user to enable Bluetooth via a system dialog.

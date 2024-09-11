@@ -17,6 +17,7 @@
 package com.punchthrough.blestarterappandroid
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
@@ -24,10 +25,13 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
+import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.getSystemService
 import timber.log.Timber
 
 /**
@@ -80,6 +84,12 @@ fun Activity.requestRelevantBluetoothPermissions(requestCode: Int) {
 
 
 //region Location permission
+/*******************************************
+ * Private functions
+ *******************************************/
+
+
+
 private fun Activity.locationPermissionRationaleRequired(): Boolean {
     return ActivityCompat.shouldShowRequestPermissionRationale(
         this,
@@ -156,5 +166,50 @@ private fun Activity.requestNearbyDevicesPermissions(requestCode: Int) {
         ),
         requestCode
     )
+}
+
+
+
+/**
+ * Check if the app is excluded from battery optimization.
+ */
+fun Context.isIgnoringBatteryOptimizations(): Boolean {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        return powerManager.isIgnoringBatteryOptimizations(packageName)
+    }
+    return true
+}
+
+/**
+ * Request to ignore battery optimizations so the app can run in the background.
+ */
+@SuppressLint("BatteryLife")
+fun Activity.requestBackgroundExecutionPermission() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isIgnoringBatteryOptimizations()) {
+        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+            .setData(android.net.Uri.parse("package:$packageName"))
+        startActivity(intent)
+    } else {
+        // Battery optimization is already ignored or not required on this OS version
+        Timber.i("Battery optimization is either not required or already ignored.")
+    }
+}
+
+/**
+ * Display rationale for background execution permission.
+ */
+private fun Activity.displayBackgroundExecutionRationale(requestCode: Int) {
+    runOnUiThread {
+        AlertDialog.Builder(this)
+            .setTitle("Background Execution Permission Required")
+            .setMessage("To ensure the app can run in the background, we need permission to ignore battery optimizations.")
+            .setPositiveButton("Grant Permission") { _, _ ->
+                requestBackgroundExecutionPermission()
+            }
+            .setNegativeButton("Quit") { _, _ -> finishAndRemoveTask() }
+            .setCancelable(false)
+            .show()
+    }
 }
 //endregion

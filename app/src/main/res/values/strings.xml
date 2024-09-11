@@ -36,4 +36,7 @@
     <string name="location_services_rationale" />
     <string name="log">Log</string>
     <string name="share_csv_file">Share CSV file</string>
+    <string name="delete_csv">Delete CSV</string>
+    <string name="start_scan">Start Scan</string>
+    <string name="scan_results_tap_to_connect">Scan results (tap to connect)</string>
 </resources>

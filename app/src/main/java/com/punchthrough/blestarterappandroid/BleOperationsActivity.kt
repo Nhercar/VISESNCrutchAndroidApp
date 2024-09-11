@@ -54,7 +54,7 @@ import java.util.Locale
 import java.util.UUID
 import android.content.Intent
 import android.net.Uri
-import android.widget.Button
+//import android.widget.Button
 import androidx.core.content.FileProvider
 import java.io.File
 
@@ -76,6 +76,7 @@ class BleOperationsActivity : AppCompatActivity() {
 
 
     private val dateFormatter = SimpleDateFormat("MMM d, HH:mm:ss", Locale.US)
+
 
     private val characteristics by lazy {
         ConnectionManager.servicesOnDevice(device)?.flatMap { service ->
@@ -140,7 +141,12 @@ class BleOperationsActivity : AppCompatActivity() {
 
         // Set up Share CSV button click handler
         binding.shareCsvButton.setOnClickListener {
-            shareCsvFile()
+            fileManager.shareCsvFile()
+        }
+
+        // Set up Delete CSV button click handler
+        binding.deleteCsvButton.setOnClickListener {
+            fileManager.deleteCsvFile()
         }
 
         setupRecyclerView()
@@ -197,37 +203,6 @@ class BleOperationsActivity : AppCompatActivity() {
             }
         }
     }
-
-
-    private fun shareCsvFile() {
-        // File name for the CSV
-        val csvFile = File(getExternalFilesDir(null), "log_data.csv")
-
-        // Check if the file exists before sharing
-        if (csvFile.exists()) {
-            // Use FileProvider to get a content URI for the file
-            val fileUri: Uri = FileProvider.getUriForFile(
-                this,
-                "${packageName}.provider", // Authority as defined in Manifest
-                csvFile
-            )
-
-            // Create an intent to share the CSV file
-            val shareIntent: Intent = Intent().apply {
-                action = Intent.ACTION_SEND
-                type = "text/csv"
-                putExtra(Intent.EXTRA_STREAM, fileUri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // Allow access to the file
-            }
-
-            // Start the share intent, prompting the user to select an app to share with
-            startActivity(Intent.createChooser(shareIntent, "Share CSV file"))
-        } else {
-            // Log or display an error if the file doesn't exist
-            log("CSV file not found")
-        }
-    }
-
 
 
     override fun onDestroy() {
@@ -294,8 +269,11 @@ class BleOperationsActivity : AppCompatActivity() {
         val uuidShort = characteristic.uuid.toString().substring(4, 8)
 
         // Format the current time to exclude the day
-        val timeFormatter = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
-        val currentTime = timeFormatter.format(Date())
+        val timeFormatter = SimpleDateFormat("mm:ss.SSS", Locale.US)
+        val currentTime = System.currentTimeMillis()
+        val formattedTime = timeFormatter.format(Date(currentTime))
+
+
 
         // Interpret the data as three 8-digit floating-point numbers
         val floatValues = ByteBuffer.wrap(value)
@@ -313,7 +291,7 @@ class BleOperationsActivity : AppCompatActivity() {
         // Write the same data to a CSV file
         val csvData = listOf(
             uuidShort,                    // UUID (first 8 characters)
-            currentTime,                  // Timestamp
+            formattedTime,                  // Timestamp
             floatValues[0].toString(),    // Value 1
             floatValues[1].toString(),    // Value 2
             floatValues[2].toString()     // Value 3
