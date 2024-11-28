@@ -136,6 +136,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.deleteCsvButton.setOnClickListener {
             fileManager.deleteCsvFile()
+            fileManager.writeToCSVFile("log_data.csv", listOf("0000"))
         }
 
         setupRecyclerView()
@@ -280,13 +281,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("MissingPermission") // Check performed inside extension fun
+    @SuppressLint("MissingPermission")
     private fun stopBleScan() {
         if (hasRequiredBluetoothPermissions()) {
             bleScanner.stopScan(scanCallback)
             isScanning = false
         }
+        // Optionally restart the scanner for a clean state
+       
     }
+
 
     @UiThread
     private fun setupRecyclerView() {

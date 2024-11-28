@@ -126,7 +126,7 @@ class BleOperationsActivity : AppCompatActivity() {
         // Retrieve the BluetoothDevice from the intent
         @Suppress("DEPRECATION")
         val device: BluetoothDevice? = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-        fileManager.writeToCSVFile("log_data.csv", listOf("New set of data"))
+        fileManager.writeToCSVFile("log_data.csv", listOf("0000"))
 
         // Check Bluetooth permissions
         if (this.hasRequiredBluetoothPermissions()) {
@@ -147,6 +147,7 @@ class BleOperationsActivity : AppCompatActivity() {
         // Set up Delete CSV button click handler
         binding.deleteCsvButton.setOnClickListener {
             fileManager.deleteCsvFile()
+            fileManager.writeToCSVFile("log_data.csv", listOf("0000"))
         }
 
         setupRecyclerView()
@@ -277,7 +278,7 @@ class BleOperationsActivity : AppCompatActivity() {
 
         // Interpret the data as three 8-digit floating-point numbers
         val floatValues = ByteBuffer.wrap(value)
-            .order(ByteOrder.LITTLE_ENDIAN) // Assuming little-endian byte order
+            .order(ByteOrder.LITTLE_ENDIAN) // little-endian byte order
             .asFloatBuffer()
             .let { buffer ->
                 floatArrayOf(
