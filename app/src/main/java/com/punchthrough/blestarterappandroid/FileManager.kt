@@ -61,37 +61,49 @@ class FileManager(private val context: Context) {
         return Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
     }
 
-    fun writeToCSVFile(fileName: String, data: List<String>) {
-        val file = File(context.getExternalFilesDir(null), fileName)
-        try {
-            FileOutputStream(file, true).use { output ->
-                // Join the list of data with commas and add a newline at the end
-                val csvLine = data.joinToString(separator = ",") + "\n"
+    // Add a sealed class for file operations results
+    sealed class FileOperationResult {
+        object Success : FileOperationResult()
+        data class Error(val message: String) : FileOperationResult()
+    }
+
+    private val csvFile: File
+        get() = File(context.getExternalFilesDir(null), "log_data.csv")
+
+    fun writeToCSVFile(fileName: String, data: List<String>): FileOperationResult {
+        return try {
+            FileOutputStream(csvFile, true).use { output ->
+                val csvLine = data.joinToString(",") + "\n"
                 output.write(csvLine.toByteArray())
             }
             Timber.d("Data written to CSV file: $fileName")
+            FileOperationResult.Success
         } catch (e: Exception) {
-            e.printStackTrace()
-            Timber.e("Error writing to file: ${e.localizedMessage}")
+            Timber.e(e, "Error writing to file")
+            FileOperationResult.Error(e.localizedMessage ?: "Unknown error")
         }
     }
 
-    // Method to delete the CSV file
-    fun deleteCsvFile() {
-        val csvFile = File(context.getExternalFilesDir(null), "log_data.csv")
-
-        if (csvFile.exists()) {
-            val deleted = csvFile.delete()
-            if (deleted) {
-                Timber.i("CSV file deleted successfully")
-                Toast.makeText(context, "CSV file deleted successfully", Toast.LENGTH_SHORT).show()
-            } else {
-                Timber.e("Failed to delete CSV file")
-                Toast.makeText(context, "Failed to delete CSV file", Toast.LENGTH_SHORT).show()
+    fun deleteCsvFile(): FileOperationResult {
+        return when {
+            !csvFile.exists() -> {
+                Timber.w("CSV file does not exist")
+                FileOperationResult.Error("File does not exist")
             }
-        } else {
-            Timber.e("CSV file does not exist")
-            Toast.makeText(context, "CSV file does not exist", Toast.LENGTH_SHORT).show()
+            csvFile.delete() -> {
+                Timber.i("CSV file deleted successfully")
+                FileOperationResult.Success
+            }
+            else -> {
+                Timber.e("Failed to delete CSV file")
+                FileOperationResult.Error("Failed to delete file")
+            }
+        }.also { result ->
+            val message = when (result) {
+                is FileOperationResult.Success -> "CSV file deleted successfully"
+                is FileOperationResult.Error -> "Error: ${result.message}"
+            }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -119,6 +131,5 @@ class FileManager(private val context: Context) {
             Toast.makeText(context, "CSV file not found", Toast.LENGTH_SHORT).show()
         }
     }
-
 
 }

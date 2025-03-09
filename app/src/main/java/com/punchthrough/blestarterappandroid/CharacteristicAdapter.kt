@@ -24,9 +24,15 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.punchthrough.blestarterappandroid.ble.printProperties
 
+// Add a view binding class for the characteristic row
+private class CharacteristicViewBinding(view: View) {
+    val uuid: TextView = view.findViewById(R.id.characteristic_uuid)
+    val properties: TextView = view.findViewById(R.id.characteristic_properties)
+}
+
 class CharacteristicAdapter(
     private val items: List<BluetoothGattCharacteristic>,
-    private val onClickListener: ((characteristic: BluetoothGattCharacteristic) -> Unit)
+    private val onClickListener: (BluetoothGattCharacteristic) -> Unit
 ) : RecyclerView.Adapter<CharacteristicAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -46,16 +52,17 @@ class CharacteristicAdapter(
     }
 
     class ViewHolder(
-        private val view: View,
-        private val onClickListener: ((characteristic: BluetoothGattCharacteristic) -> Unit)
+        view: View,
+        private val onClickListener: (BluetoothGattCharacteristic) -> Unit
     ) : RecyclerView.ViewHolder(view) {
+        private val binding = CharacteristicViewBinding(view)
 
         fun bind(characteristic: BluetoothGattCharacteristic) {
-            view.findViewById<TextView>(R.id.characteristic_uuid).text =
-                characteristic.uuid.toString().substring(4, 8)
-            view.findViewById<TextView>(R.id.characteristic_properties).text =
-                characteristic.printProperties()
-            view.setOnClickListener { onClickListener.invoke(characteristic) }
+            with(binding) {
+                uuid.text = characteristic.uuid.toString().substring(4, 8)
+                properties.text = characteristic.printProperties()
+                itemView.setOnClickListener { onClickListener(characteristic) }
+            }
         }
     }
 }

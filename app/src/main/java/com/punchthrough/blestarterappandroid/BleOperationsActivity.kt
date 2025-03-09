@@ -57,7 +57,14 @@ import android.net.Uri
 //import android.widget.Button
 import androidx.core.content.FileProvider
 import java.io.File
+import timber.log.Timber
 
+// Add a data class to represent the sensor data
+data class SensorData(
+    val uuid: String,
+    val timestamp: String,
+    val values: List<Float>
+)
 
 class BleOperationsActivity : AppCompatActivity() {
 
@@ -263,42 +270,34 @@ class BleOperationsActivity : AppCompatActivity() {
         }
     }
 
-    // Custom function to write in the log and eventually in the external storage
+    // Improve the logCustomFormat function with better data handling
     @SuppressLint("SetTextI18n")
     private fun logCustomFormat(characteristic: BluetoothGattCharacteristic, value: ByteArray) {
-        // Limit the UUID to the first 8 digits
-        val uuidShort = characteristic.uuid.toString().substring(4, 8)
+        val sensorData = try {
+            val uuidShort = characteristic.uuid.toString().substring(4, 8)
+            val timeFormatter = SimpleDateFormat("mm:ss.SSS", Locale.US)
+            val formattedTime = timeFormatter.format(Date(System.currentTimeMillis()))
+            
+            val floatValues = ByteBuffer.wrap(value)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .asFloatBuffer()
+                .let { buffer ->
+                    List(3) { index -> buffer.getOrNull(index) ?: 0f }
+                }
 
-        // Format the current time to exclude the day
-        val timeFormatter = SimpleDateFormat("mm:ss.SSS", Locale.US)
-        val currentTime = System.currentTimeMillis()
-        val formattedTime = timeFormatter.format(Date(currentTime))
+            SensorData(uuidShort, formattedTime, floatValues)
+        } catch (e: Exception) {
+            Timber.e(e, "Error parsing sensor data")
+            return
+        }
 
-
-
-        // Interpret the data as three 8-digit floating-point numbers
-        val floatValues = ByteBuffer.wrap(value)
-            .order(ByteOrder.LITTLE_ENDIAN) // little-endian byte order
-            .asFloatBuffer()
-            .let { buffer ->
-                floatArrayOf(
-                    buffer.getOrNull(0) ?: 0f,
-                    buffer.getOrNull(1) ?: 0f,
-                    buffer.getOrNull(2) ?: 0f
-                )
-            }
-
-
-        // Write the same data to a CSV file
+        // Write to CSV file
         val csvData = listOf(
-            uuidShort,                    // UUID (first 8 characters)
-            formattedTime,                  // Timestamp
-            floatValues[0].toString(),    // Value 1
-            floatValues[1].toString(),    // Value 2
-            floatValues[2].toString()     // Value 3
+            sensorData.uuid,
+            sensorData.timestamp,
+            *sensorData.values.map { it.toString() }.toTypedArray()
         )
-
-        // Call the CSV writer to log the data
+        
         fileManager.writeToCSVFile("log_data.csv", csvData)
     }
 
